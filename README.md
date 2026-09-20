@@ -1,4 +1,4 @@
-# Radix EHR Bridge MCP Server
+# EHR Bridge MCP Server
 
 An MCP (Model Context Protocol) AI Server that exposes EHR Bridge capabilities as AI-callable tools.
 
