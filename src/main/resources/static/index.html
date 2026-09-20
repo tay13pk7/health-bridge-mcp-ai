@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HealthBridge AI &ndash; EHR Intelligence</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    body { background: #0f172a; }
+    .message-bubble { animation: fadeUp 0.3s ease; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+    .prose-ai h1,.prose-ai h2,.prose-ai h3 { color:#38bdf8; margin:10px 0 4px; font-weight:700; }
+    .prose-ai ul { list-style:disc; padding-left:1.4rem; margin:4px 0; }
+    .prose-ai ol { list-style:decimal; padding-left:1.4rem; margin:4px 0; }
+    .prose-ai li { margin:3px 0; }
+    .prose-ai strong { color:#fbbf24; }
+    .prose-ai em { color:#a5f3fc; }
+    .prose-ai code { background:#1e293b; padding:2px 6px; border-radius:4px; font-size:0.82em; color:#a5f3fc; }
+    .prose-ai pre { background:#1e293b; padding:12px; border-radius:8px; overflow-x:auto; margin:8px 0; }
+    .prose-ai table { width:100%; border-collapse:collapse; margin:10px 0; font-size:0.82em; }
+    .prose-ai th { background:#1e293b; padding:7px 10px; text-align:left; border:1px solid #334155; color:#38bdf8; }
+    .prose-ai td { padding:7px 10px; border:1px solid #334155; }
+    .prose-ai tr:nth-child(even) td { background:#0f172a; }
+    .prose-ai p { margin:4px 0; }
+    .prose-ai blockquote { border-left:3px solid #38bdf8; padding-left:10px; color:#94a3b8; margin:8px 0; }
+    ::-webkit-scrollbar { width:5px; }
+    ::-webkit-scrollbar-track { background:#1e293b; }
+    ::-webkit-scrollbar-thumb { background:#334155; border-radius:3px; }
+    .typing span { animation: blink 1.2s infinite; display:inline-block; }
+    .typing span:nth-child(2) { animation-delay:0.2s; }
+    .typing span:nth-child(3) { animation-delay:0.4s; }
+    @keyframes blink { 0%,80%,100%{opacity:0;} 40%{opacity:1;} }
+    .quick-btn { transition: all 0.18s; }
+    .quick-btn:hover { transform: translateX(3px); }
+    .glow { box-shadow: 0 0 20px rgba(56,189,248,0.1); }
+    .tenant-healthy { font-size:0.65rem; padding:1px 6px; border-radius:9999px; font-weight:600; background:#052e16; color:#4ade80; border:1px solid #166534; }
+    .tenant-degraded { font-size:0.65rem; padding:1px 6px; border-radius:9999px; font-weight:600; background:#450a0a; color:#f87171; border:1px solid #991b1b; }
+    select { -webkit-appearance:none; }
+  </style>
+</head>
+<body class="h-screen flex flex-col text-slate-100 font-sans">
+
+  <!-- Header -->
+  <header class="bg-slate-900 border-b border-slate-700 px-4 py-2.5 flex items-center justify-between shadow-lg flex-shrink-0">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow">H</div>
+      <div>
+        <h1 class="font-bold text-white text-sm">HealthBridge AI</h1>
+        <p class="text-xs text-slate-400">EHR Intelligence &middot; Groq &middot; openai/gpt-oss-20b</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 bg-slate-800 border border-slate-600 rounded-lg px-2 py-1">
+        <span class="text-xs text-slate-400">Tenant:</span>
+        <select id="tenantSelect" onchange="onTenantChange()"
+          class="bg-transparent text-xs text-sky-300 font-mono focus:outline-none cursor-pointer pr-2">
+          <optgroup label="--- Athena ---">
+            <option value="ACME-DEMO">ACME-DEMO [OK]</option>
+            <option value="RIVERSIDE-HEALTH">RIVERSIDE-HEALTH [!]</option>
+          </optgroup>
+          <optgroup label="--- ModMed ---">
+            <option value="DALLAS-ORTHO">DALLAS-ORTHO [OK]</option>
+            <option value="PLANO-MEDICAL">PLANO-MEDICAL [!]</option>
+          </optgroup>
+          <optgroup label="--- Nextgen ---">
+            <option value="BAYVIEW-CLINIC">BAYVIEW-CLINIC [OK]</option>
+            <option value="LAKESIDE-HEALTH">LAKESIDE-HEALTH [!]</option>
+          </optgroup>
+          <optgroup label="--- Allscripts ---">
+            <option value="METRO-CARE">METRO-CARE [OK]</option>
+            <option value="SUMMIT-HEALTH">SUMMIT-HEALTH [!]</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <span id="status-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="text-xs text-slate-400">Live</span>
+      </div>
+      <div id="timer" class="text-xs text-slate-500 font-mono hidden bg-slate-800 px-2 py-0.5 rounded">0.0s</div>
+    </div>
+  </header>
+
+  <div class="flex flex-1 overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="w-60 bg-slate-900 border-r border-slate-700 p-3 flex flex-col gap-1.5 overflow-y-auto hidden md:flex flex-shrink-0">
+      <p class="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-1 mt-1">Quick Queries</p>
+
+      <button onclick="sendQuick('List all providers for the selected tenant')"
+        class="quick-btn text-left text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg px-3 py-2 border border-slate-700 hover:border-sky-700">
+        Providers &mdash; List all providers
+      </button>
+      <button onclick="sendQuick('Show today\'s appointments or schedule for the selected tenant')"
+        class="quick-btn text-left text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg px-3 py-2 border border-slate-700 hover:border-sky-700">
+        Schedule &mdash; Today's appointments
+      </button>
+      <button onclick="sendQuick('Show all failed sync jobs in the last 24 hours for the selected tenant')"
+        class="quick-btn text-left text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg px-3 py-2 border border-slate-700 hover:border-sky-700">
+        Failed Sync Jobs
+      </button>
+      <button onclick="sendQuick('Test the EHR connection for the selected tenant and tell me the status')"
+        class="quick-btn text-left text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg px-3 py-2 border border-slate-700 hover:border-sky-700">
+        Test Connection
+      </button>
+      <button onclick="sendQuick('Search for patients in the selected tenant EHR system')"
+        class="quick-btn text-left text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg px-3 py-2 border border-slate-700 hover:border-sky-700">
+        Search Patients
+      </button>
+      <button onclick="sendQuick('Show me the sync status for the selected tenant')"
+        class="quick-btn text-left text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg px-3 py-2 border border-slate-700 hover:border-sky-700">
+        Sync Status
+      </button>
+      <button onclick="sendQuick('Show me the medications list for the selected tenant')"
+        class="quick-btn text-left text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg px-3 py-2 border border-slate-700 hover:border-sky-700">
+        Medications
+      </button>
+
+      <hr class="border-slate-700 my-1"/>
+      <p class="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-1">AI Intelligence</p>
+
+      <button onclick="runHealthMonitor()"
+        class="quick-btn text-left text-xs bg-indigo-900/40 hover:bg-indigo-900/70 text-indigo-300 rounded-lg px-3 py-2.5 border border-indigo-800/60 hover:border-indigo-500 font-medium">
+        Proactive Health Monitor
+        <div class="text-indigo-500 text-[10px] mt-0.5">AI scans all systems &rarr; severity alerts</div>
+      </button>
+
+      <button onclick="runExecutiveReport()"
+        class="quick-btn text-left text-xs bg-emerald-900/30 hover:bg-emerald-900/60 text-emerald-300 rounded-lg px-3 py-2.5 border border-emerald-800/50 hover:border-emerald-500 font-medium">
+        Executive Report
+        <div class="text-emerald-600 text-[10px] mt-0.5">Board-ready cross-tenant summary</div>
+      </button>
+
+      <hr class="border-slate-700 my-1"/>
+
+      <button onclick="clearChat()"
+        class="quick-btn text-left text-xs bg-slate-800 hover:bg-red-900/40 text-slate-400 hover:text-red-400 rounded-lg px-3 py-2 border border-slate-700 hover:border-red-800 mt-auto">
+        Clear Chat
+      </button>
+    </aside>
+
+    <!-- Chat Area -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+
+      <!-- Messages -->
+      <div id="messages" class="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+        <!-- Welcome message -->
+        <div class="flex gap-3 message-bubble">
+          <div class="w-7 h-7 rounded-full bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5">H</div>
+          <div class="flex-1 max-w-3xl">
+            <div class="text-xs text-slate-500 mb-1">HealthBridge AI</div>
+            <div class="bg-slate-800 rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-slate-200 prose-ai glow">
+              <p><strong>Welcome to HealthBridge AI &mdash; EHR Intelligence Hub!</strong></p>
+              <p class="mt-2 text-slate-400">I can help you query EHR data across all connected systems using natural language. Try asking:</p>
+              <ul class="mt-2 text-slate-300">
+                <li>Select a tenant from the dropdown above and ask about their data</li>
+                <li>Click <strong>Proactive Health Monitor</strong> to scan all systems for issues</li>
+                <li>Click <strong>Executive Report</strong> for a cross-tenant summary</li>
+              </ul>
+              <p class="mt-2 text-slate-500 text-xs">Connected EHRs: Athena &middot; ModMed &middot; Nextgen &middot; Allscripts</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- System notification bar -->
+      <div id="sysBar" class="hidden px-4 py-2 bg-slate-800 border-t border-slate-700 text-xs text-amber-400 flex items-center gap-2 flex-shrink-0">
+        <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+        <span id="sysBarText"></span>
+      </div>
+
+      <!-- Input -->
+      <div class="border-t border-slate-700 bg-slate-900 px-4 py-3 flex-shrink-0">
+        <div class="flex gap-2 max-w-4xl mx-auto">
+          <input id="chatInput" type="text"
+            placeholder="Ask anything about your EHR data..."
+            class="flex-1 bg-slate-800 border border-slate-600 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:bg-slate-800"
+            onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();sendMessage();}" />
+          <button onclick="sendMessage()"
+            class="bg-sky-600 hover:bg-sky-500 text-white rounded-xl px-4 py-2.5 text-sm font-medium transition-colors flex-shrink-0">
+            Send
+          </button>
+        </div>
+        <p class="text-center text-xs text-slate-600 mt-2">HealthBridge AI &middot; Tenant: <span id="activeTenantLabel" class="text-sky-500 font-mono">ACME-DEMO</span></p>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const messagesEl = document.getElementById('messages');
+    const input = document.getElementById('chatInput');
+    const timerEl = document.getElementById('timer');
+    const sysBar = document.getElementById('sysBar');
+    const sysBarText = document.getElementById('sysBarText');
+    const activeTenantLabel = document.getElementById('activeTenantLabel');
+
+    let sessionId = 'session-' + Date.now();
+    let timerInterval = null;
+    let startTime = null;
+
+    function getSelectedTenant() {
+      return document.getElementById('tenantSelect').value;
+    }
+
+    function onTenantChange() {
+      const t = getSelectedTenant();
+      activeTenantLabel.textContent = t;
+      showSysBar('Tenant switched to ' + t);
+    }
+
+    function showSysBar(msg, duration = 4000) {
+      sysBarText.textContent = msg;
+      sysBar.classList.remove('hidden');
+      setTimeout(() => sysBar.classList.add('hidden'), duration);
+    }
+
+    function startTimer() {
+      startTime = Date.now();
+      timerEl.classList.remove('hidden');
+      timerEl.textContent = '0.0s';
+      timerInterval = setInterval(() => {
+        timerEl.textContent = ((Date.now() - startTime) / 1000).toFixed(1) + 's';
+      }, 100);
+    }
+
+    function stopTimer() {
+      clearInterval(timerInterval);
+      setTimeout(() => timerEl.classList.add('hidden'), 3000);
+    }
+
+    function addUserMessage(text) {
+      const div = document.createElement('div');
+      div.className = 'flex gap-3 message-bubble justify-end';
+      div.innerHTML = `
+        <div class="max-w-xl">
+          <div class="text-xs text-slate-500 mb-1 text-right">You</div>
+          <div class="bg-sky-700 rounded-2xl rounded-tr-sm px-4 py-2.5 text-sm text-white">${escapeHtml(text)}</div>
+        </div>`;
+      messagesEl.appendChild(div);
+      scrollToBottom();
+    }
+
+    function addAiMessage(markdown) {
+      const div = document.createElement('div');
+      div.className = 'flex gap-3 message-bubble';
+      const rendered = typeof marked !== 'undefined' ? marked.parse(markdown) : escapeHtml(markdown);
+      div.innerHTML = `
+        <div class="w-7 h-7 rounded-full bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5">H</div>
+        <div class="flex-1 max-w-3xl">
+          <div class="text-xs text-slate-500 mb-1">HealthBridge AI</div>
+          <div class="bg-slate-800 rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-slate-200 prose-ai">${rendered}</div>
+        </div>`;
+      messagesEl.appendChild(div);
+      scrollToBottom();
+    }
+
+    function addTypingIndicator() {
+      const div = document.createElement('div');
+      div.id = 'typing-indicator';
+      div.className = 'flex gap-3 message-bubble';
+      div.innerHTML = `
+        <div class="w-7 h-7 rounded-full bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5">R</div>
+        <div class="bg-slate-800 rounded-2xl rounded-tl-sm px-4 py-3">
+          <div class="typing flex gap-1 items-center h-4">
+            <span class="w-1.5 h-1.5 bg-sky-400 rounded-full"></span>
+            <span class="w-1.5 h-1.5 bg-sky-400 rounded-full"></span>
+            <span class="w-1.5 h-1.5 bg-sky-400 rounded-full"></span>
+          </div>
+        </div>`;
+      messagesEl.appendChild(div);
+      scrollToBottom();
+    }
+
+    function addSystemMessage(text) {
+      const div = document.createElement('div');
+      div.className = 'flex justify-center message-bubble';
+      div.innerHTML = `<div class="text-xs text-slate-500 bg-slate-800/50 rounded-full px-4 py-1.5 border border-slate-700">${escapeHtml(text)}</div>`;
+      messagesEl.appendChild(div);
+      scrollToBottom();
+    }
+
+    function removeTypingIndicator() {
+      const el = document.getElementById('typing-indicator');
+      if (el) el.remove();
+    }
+
+    function scrollToBottom() {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const text = input.value.trim();
+      if (!text) return;
+      const tenant = getSelectedTenant();
+      input.value = '';
+      addUserMessage(text);
+      addTypingIndicator();
+      startTimer();
+      try {
+        const fullMessage = `[Tenant: ${tenant}] ${text}`;
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ message: fullMessage, sessionId })
+        });
+        const data = await res.json();
+        removeTypingIndicator();
+        stopTimer();
+        addAiMessage(data.response || data.error || 'No response received.');
+      } catch (e) {
+        removeTypingIndicator();
+        stopTimer();
+        addAiMessage('**Error:** Could not reach the server. Make sure the app is running on port 8081.');
+      }
+    }
+
+    function sendQuick(msg) {
+      input.value = msg;
+      sendMessage();
+    }
+
+    async function runHealthMonitor() {
+      const tenant = getSelectedTenant();
+      addSystemMessage('Running AI Health Monitor for ' + tenant + '...');
+      addTypingIndicator();
+      startTimer();
+      try {
+        const res = await fetch('/api/monitor/' + encodeURIComponent(tenant));
+        const data = await res.json();
+        removeTypingIndicator();
+        stopTimer();
+        const report = data.analysis || data.error || JSON.stringify(data, null, 2);
+        addAiMessage('## Proactive Health Monitor: ' + tenant + '\n\n' + report);
+        showSysBar('Health scan complete for ' + tenant);
+      } catch (e) {
+        removeTypingIndicator();
+        stopTimer();
+        addAiMessage('**Error:** Health monitor failed. Check server logs.');
+      }
+    }
+
+    async function runExecutiveReport() {
+      addSystemMessage('Generating Executive Report across all EHR tenants...');
+      addTypingIndicator();
+      startTimer();
+      try {
+        const res = await fetch('/api/report/executive');
+        const data = await res.json();
+        removeTypingIndicator();
+        stopTimer();
+        const report = data.report || data.error || JSON.stringify(data, null, 2);
+        addAiMessage('## Executive EHR Status Report\n\n' + report);
+        showSysBar('Executive report generated');
+      } catch (e) {
+        removeTypingIndicator();
+        stopTimer();
+        addAiMessage('**Error:** Executive report failed. Check server logs.');
+      }
+    }
+
+    async function clearChat() {
+      try {
+        await fetch('/api/chat/' + sessionId, { method: 'DELETE' });
+      } catch (_) {}
+      sessionId = 'session-' + Date.now();
+      messagesEl.innerHTML = '';
+      addSystemMessage('Chat cleared -- conversation memory reset');
+      input.focus();
+    }
+
+    function escapeHtml(t) {
+      return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    input.focus();
+  </script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: healthbridge-ai
+
+  ai:
+    mcp:
+      server:
+        name: healthbridge-ai
+        version: 1.0.0
+        type: SYNC
+        sse-message-endpoint: /mcp/message
+
+    # Groq is OpenAI-API-compatible - point spring-ai-openai at Groq's base URL.
+    # Model: llama-3.3-70b-versatile - Groq's best tool-calling model.
+    openai:
+      base-url: https://api.groq.com/openai
+      # Set GROQ_API_KEY in your environment; never commit credentials.
+      api-key: ${GROQ_API_KEY:}
+      chat:
+        options:
+          model: openai/gpt-oss-20b
+          temperature: 0.2
+          max-tokens: 600
+
+  mvc:
+    async:
+      request-timeout: 600000
+
+# Actuator for health checks
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.ai.healthbridgemcp: DEBUG
+    org.springframework.ai: DEBUG
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# Application-specific settings
+app:
+  debug:
+    # Set to 'true' to see registered Spring beans at startup
+    # Useful for debugging @Configuration proxies, tool providers, and MCP setup
+    # Default: false (no noise in production)
+    startup-logging: false

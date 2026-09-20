@@ -1,0 +1,20 @@
+# Maven build output
+target/
+
+# Java build and runtime artifacts
+*.class
+*.log
+
+# IDE settings
+.idea/
+*.iml
+.project
+.classpath
+.settings/
+.vscode/
+
+# Local configuration and credentials
+.env
+.env.*
+application-local.yml
+application-local.yaml
