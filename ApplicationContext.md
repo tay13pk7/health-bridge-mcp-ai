@@ -126,7 +126,7 @@ import org.springframework.context.ApplicationContext;  // ✅ Spring's IoC cont
 **Full working example:**
 
 ```java
-package com.radix.healthbridgemcp;
+package com.prasad.healthbridgemcp;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -316,4 +316,4 @@ After getBean call
 
 ---
 
-*Generated for reference — Radix EHR Bridge MCP Project*
+*Generated for reference — Healthcare EHR Bridge MCP Project*

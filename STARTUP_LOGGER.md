@@ -49,13 +49,13 @@ When enabled, you'll see output like this at startup:
 ==========================================
    REGISTERED BEANS (Startup Debug)
 ==========================================
-🎭 mcpServerConfig → com.radix...McpServerConfig$$SpringCGLIB$$0 [PROXIED]
-📦 athenaTools → com.radix.healthbridgemcp.tools.AthenaTools
-📦 modmedTools → com.radix.healthbridgemcp.tools.ModMedTools
+🎭 mcpServerConfig → com.ai...McpServerConfig$$SpringCGLIB$$0 [PROXIED]
+📦 athenaTools → com.ai.healthbridgemcp.tools.AthenaTools
+📦 modmedTools → com.ai.healthbridgemcp.tools.ModMedTools
 📦 athenaToolProvider → org.springframework.ai.tool.method.MethodToolCallbackProvider
 📦 modmedToolProvider → org.springframework.ai.tool.method.MethodToolCallbackProvider
-📦 groqChatService → com.radix.healthbridgemcp.chat.GroqChatService
-📦 auditLogger → com.radix.healthbridgemcp.audit.AuditLogger
+📦 groqChatService → com.ai.healthbridgemcp.chat.GroqChatService
+📦 auditLogger → com.ai.healthbridgemcp.audit.AuditLogger
 ==========================================
    Total beans logged: 15
 ==========================================

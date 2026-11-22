@@ -12,11 +12,11 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.radix</groupId>
-    <artifactId>radix-ehr-bridge-mcp</artifactId>
+    <groupId>com.ai</groupId>
+    <artifactId>ai-ehr-bridge-mcp</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
-    <name>radix-ehr-bridge-mcp</name>
+    <name>ai-ehr-bridge-mcp</name>
     <description>MCP AI Server for EHR Bridge - Interoperability Layer</description>
 
     <properties>
