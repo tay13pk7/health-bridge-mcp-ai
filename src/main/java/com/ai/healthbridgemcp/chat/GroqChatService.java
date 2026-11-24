@@ -66,7 +66,7 @@ public class GroqChatService {
 
         // Build a compact prompt for Groq (no tool schemas sent)
         StringBuilder prompt = new StringBuilder();
-        prompt.append("You are an EHR assistant for Radix EHR Bridge. Be concise, use markdown tables/bullets.\n");
+        prompt.append("You are an EHR assistant for AI Healthcare EHR Records. Be concise, use markdown tables/bullets.\n");
         prompt.append("User question: ").append(query).append("\n");
         prompt.append("Tenant: ").append(tenant).append("\n");
 
