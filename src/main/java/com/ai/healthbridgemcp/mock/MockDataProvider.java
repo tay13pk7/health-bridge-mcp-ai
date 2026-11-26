@@ -87,7 +87,7 @@ public final class MockDataProvider {
                     "npi", "1234567890", "specialty", "Family Medicine",
                     "department", "Primary Care", "status", "ACTIVE", "tenantId", tenantId),
             Map.of("providerId", "ATH-P002", "firstName", "James", "lastName", "Rodriguez",
-                    "npi", "2345678901", "specialty", "Cardiology",
+                    "npi", "2345678619", "specialty", "Cardiology",
                     "department", "Cardiology", "status", "ACTIVE", "tenantId", tenantId),
             Map.of("providerId", "ATH-P003", "firstName", "Priya", "lastName", "Sharma",
                     "npi", "3456789012", "specialty", "Pediatrics",
