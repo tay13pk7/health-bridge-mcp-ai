@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
  * Useful for debugging bean registration, proxy creation, and Spring AI tool provider setup.
  * 
  * Enable/disable via application.yml:
- *   app.debug.startup-logging: true/false
+ *   app.debug.startup-logging: true/false , You can set this to better logging
  */
 @Component
 @ConditionalOnProperty(
